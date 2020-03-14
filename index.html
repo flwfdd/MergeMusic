@@ -1,17 +1,34 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
-  <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
-  <script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
-  <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
-  <link rel="stylesheet" href="https://at.alicdn.com/t/font_1685715_b53292xz6m.css"></link>
+	<title>MergeMusic</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+	<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+	<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="https://at.alicdn.com/t/font_1685715_f39q3qwjl7i.css"></link>
 	
 	<style>
+		#title{
+			animation: change 10s linear 0s infinite;
+			text-decoration:none;
+			outline:none;
+			border:none;
+			transition:all 0.5s ease-in-out;
+			text-shadow: 0 5px 5px #fff,0 -5px 5px #fff,5px 0 5px #fff,-5px 0 5px #fff;
+			text-align: center;
+		}
+
+		@keyframes change {
+			0% {color: #4cf;}
+			50% {color: #fac;}
+			100% {color: #4cf;}
+		}
+		
 		html,body{
 			margin: 0;
 			padding: 0;
@@ -30,13 +47,17 @@
 			filter: blur(5px);
 		}
 		
+		.translist-move{
+			transition: all 0.3s;
+		}
 		.translist-enter-active, .translist-leave-active {
-		  transition: all 1s;
+		  transition: all 0.5s;
 		}
 		.translist-enter, .translist-leave-to
 		/* .list-leave-active for below version 2.1.8 */ {
 		  opacity: 0;
 		  transform: translateY(30px);
+		}
 		}
 	</style>
 </head>
@@ -46,6 +67,8 @@
 	<div class="container col-12 col-md-8" style="opacity: 0.7;">
 		<div id="app">
 			<div class="card"><div class="card-body">
+				<h1 id="title">MergeMusic</h1>
+				<p style="text-align: center;">{{hitokoto}}</p>
 				<div class="row">
 					<input class="col-10 form-control" v-model="name" @keyup.13="off=0;search();"></input>
 					<button class="btn btn-success col-2" @click="off=0;search();">
@@ -62,25 +85,46 @@
 					</select>
 				</div>
 				<div class="row">
-					<select class="form-control col-6" v-model="looptype">
+					<select class="form-control col-4" v-model="looptype">
 						<option v-for="i in looptypes" :value="i.value">{{i.text}}</option>
 					</select>
-					<button class="form-control col-6" @click="playNext();" style="text-align: left;">下一首</button>
+					<button class="form-control col-4" @click="playNext();" style="text-align: left;">下一首</button>
+					<button class="form-control col-4" @click="showPlayList=(!showPlayList)" style="text-align: left;">{{showPlayList?"关闭":"打开"}}播放列表</button>
 				</div>
 				<div class="row">
 					<audio style="width:100%;outline: medium;" ref="player" id="player" :src="nowmurl" controls="controls" autoplay="autoplay"></audio>
 				</div>
 				<audio class="col-12" ref="player2" id="player2" :src="nowmurl" controls="controls"  v-show="false"  autoplay="autoplay" crossorigin=""></audio>
+				<p :style="{textShadow:'0px 0px '+nowlevel+'px #606975',fontSize:'30px',color:'#606975',textAlign:'center'}">{{nowname}}</p>
 				<p :style="{textShadow:'0px 0px '+nowlevel+'px #606975',fontSize:'20px',color:'#606975',textAlign:'center'}">{{nowlrc}}</p>
 			</div></div>
 			
 			<transition-group name="translist">
-				<music-list v-for="i in songList" :song="i" :key="i.key" @play="playMusic" 
-				@search="startSearch" @download="download"></music-list>
+				<div v-show="!showPlayList && songList.length" class="col-12" key="songlisthead">
+					<hr/>
+					<div class="row m-auto" >
+						<button class="form-control col-6" @click="playAll();" style="text-align: left;">播放全部</button>
+						<button class="form-control col-6" @click="addAll();" style="text-align: left;">添加全部</button>
+					</div>
+					<br/>
+				</div>
+				<music-list v-show="!showPlayList" v-for="(item,index) in songList" :song="item" :key="item.songlistkey" :index="index" @play="playMusic" 
+				@search="startSearch" @download="download" @lyric="getlyric" @add="addList"></music-list>
+				<button v-show="!showPlayList" class="btn btn-block btn-success"
+				@click="search();" :disabled="end" v-if="off" key="updatemore">
+				{{end?'木有了...':'加载更多'}}</button>
 			</transition-group>
-			<button class="btn btn-block btn-success"
-				@click="search();" :disabled="end" v-if="off">
-			{{end?'木有了...':'加载更多'}}</button>
+			
+			<transition-group name="translist">
+				<div key="PlayListhead" v-show="showPlayList  && playList.length">
+					<hr/>
+					<button class="form-control col-12" @click="playList=[]" style="text-align: left;">清空播放列表</button>
+					<br/>
+				</div>
+				<play-music-list v-if="showPlayList" v-for="(item,index) in playList" :song="item" :key="item.playlistkey" :index="index" @play="playMusic" 
+				@search="startSearch" @download="download" @lyric="getlyric"></play-music-list>
+			</transition-group>
+			
 			
 		</div>
 	</div>
@@ -103,8 +147,11 @@
 				nowt:0,
 				nowlrc:"",
 				nowlevel:0,
+				nowname:"",
 				playing:0,
 				looptype:"顺序",
+				hitokoto:"",
+				showPlayList:false,
 				platforms:[
 					{"text":"网易云","value":"C"},
 					{"text":"QQ","value":"Q"}
@@ -127,6 +174,7 @@
 			methods:{
 				search : function(){
 					_this=this;
+					this.showPlayList=false;
 					if(this.searching)return;
 					//console.log(this.platform+this.type+this.name);
 					this.searching=true;
@@ -204,7 +252,8 @@
 						axios.get("https://v1.hitokoto.cn/nm/lyric/"+key) //获取歌词
 						.then(function(response){
 							_this.nowlrcs=[];
-							if(response.data.nolyric){
+							r=response;
+							if(response.data.nolyric || response.data.nolyric==undefined){
 								_this.nowlrcs=[[0,"木有歌词哦"]];
 								_this.playing--;
 								return;
@@ -228,6 +277,8 @@
 							_this.imgurl=response.data.songs[0].al.picUrl;
 							document.querySelector("#bgimg").style.backgroundImage="url("+_this.imgurl+")";
 							
+							_this.nowname="〔"+response.data.songs[0].name+"〕";
+							
 							for(i=0;i<_this.playList.length;i++){ //加入播放列表
 								if(_this.playList[i].id=="C"+key){
 									_this.playList.unshift(_this.playList.splice(i,1)[0]);
@@ -236,6 +287,8 @@
 								}
 							}
 							response.data.songs[0].id="C"+response.data.songs[0].id;
+							response.data.songs[0].album=response.data.songs[0].al;
+							response.data.songs[0].artists=response.data.songs[0].ar;
 							_this.playList.unshift(response.data.songs[0]);
 							_this.playing--;
 						})
@@ -254,11 +307,19 @@
 							}
 							_this.playing--;
 						})
-						for(i in _this.songList){
-							if(_this.songList[i].id=="Q"+key)r=_this.songList[i];
+						r=false;
+						for(i in _this.playList){
+							if(_this.playList[i].id=="Q"+key)r=_this.playList[i];
 						}
+						if(!r){
+							for(i in _this.songList){
+								if(_this.songList[i].id=="Q"+key)r=_this.songList[i];
+							}
+						}
+						
 						_this.imgurl="http://y.gtimg.cn/music/photo_new/T002R500x500M000"+r.albummid+".jpg";
 						document.querySelector("#bgimg").style.backgroundImage="url("+_this.imgurl+")";
+						_this.nowname="〔"+r.name+"〕";
 						
 						_this.playing--;
 						
@@ -300,7 +361,6 @@
 							break;
 						}
 					}
-					
 					if(typeof(analyser)!="undefined") //更新音量
 					{
 						this.$refs["player2"].currentTime=this.$refs["player"].currentTime;
@@ -360,41 +420,175 @@
 					this.off=0;
 					this.search();
 				},
-				download: function(id){ //下载
-					if(id[0]=="C"){
-						id=id.slice(1);
-						axios.get("https://v1.hitokoto.cn/nm/url/"+id) //获取音乐直链
-					.then(function(response){
-						if(!response.data.data[0].url){
-							
-						}
-						else{
-							window.open(response.data.data[0].url,"_blank");
-						}
-					})
+				download: function(key){ //下载
+					if(key[0]=="C"){
+						key=key.slice(1);
+						axios.get("https://v1.hitokoto.cn/nm/url/"+key) //获取音乐直链
+						.then(function(response){
+							if(!response.data.data[0].url){
+								
+							}
+							else{
+								window.open(response.data.data[0].url,"_blank");
+							}
+						})
 					}
 					
+					if(key[0]=="Q"){
+						key=key.slice(1)
+						axios.get("https://1426531544223608.cn-shanghai.fc.aliyuncs.com/2016-08-15/proxy/flwfdd-music/qqurl/?id="+key) //获取音乐直链
+						.then(function(response){
+							if(!response.data.url){
+								
+							}
+							else{
+								window.open(response.data.url,"_blank");;
+							}
+							_this.playing--;
+						})
+					}
+					
+				},
+				getlyric: function(key){
+					if(key[0]=="C"){
+						key=key.slice(1);
+						axios.get("https://v1.hitokoto.cn/nm/lyric/"+key) //获取歌词
+						.then(function(response){
+							_this.nowlrcs=[];
+							if(response.data.nolyric){
+								window.alert("木有歌词哦");
+								return;
+							}
+							s=response.data.lrc.lyric;
+							aux = document.createElement("textarea"); 
+							aux.value=s; 
+							document.body.appendChild(aux); 
+							aux.select();
+							document.execCommand("copy"); 
+							window.alert("复制到剪贴板咯");
+						})
+					}
+					
+					if(key[0]=="Q"){
+						key=key.slice(1);
+						axios.get("https://1426531544223608.cn-shanghai.fc.aliyuncs.com/2016-08-15/proxy/flwfdd-music/qqlrc/?id="+key) //获取歌词
+						.then(function(response){
+							s=response.data.lyric;
+							if(typeof(s)=="undefined")window.alert("木有歌词哦");
+							else{
+								aux = document.createElement("textarea");
+								aux.value=s; 
+								document.body.appendChild(aux); 
+								aux.select();
+								document.execCommand("copy"); 
+								window.alert("复制到剪贴板咯");
+							}
+						})
+					}
+				},
+				addList: function(key){
+					for(i in this.playList){
+						if(this.playList[i].id==key)return;
+					}
+					if(key[0]=="C"){
+						key=key.slice(1);
+						axios.get("https://v1.hitokoto.cn/nm/detail/"+key) //获取标题、歌手、图片
+						.then(function(response){
+							for(i=0;i<_this.playList.length;i++){ //加入播放列表
+								if(_this.playList[i].id=="C"+key){
+									return;
+								}
+							}
+							response.data.songs[0].id="C"+response.data.songs[0].id;
+							response.data.songs[0].album=response.data.songs[0].al;
+							response.data.songs[0].artists=response.data.songs[0].ar;
+							_this.playList.push(response.data.songs[0]);
+						})
+					}
+					if(key[0]=="Q"){
+						key=key.slice(1)
+						for(i in this.playList){
+							if(this.playList[i].id=="Q"+key)return;
+						}
+						for(i in _this.songList){
+							if(this.songList[i].id=="Q"+key)r=_this.songList[i];
+						}
+						this.playList.push(r);
+					}
+				},
+				playAll: function(){
+					this.playList=this.songList.concat();
+					this.playMusic(this.playList[0].id);
+				},
+				addAll: function(){
+					pl=[]
+					for(i in this.playList){
+						pl.push(this.playList[i].id)
+					}
+					for(i in this.songList){
+						if(pl.indexOf(this.songList[i].id)==-1)this.playList.push(this.songList[i]);
+					}
 				}
 			},
 			watch:{
 				songList:function(){
 					for(i=0;i<this.songList.length;i++){
-						this.songList[i]["key"]=i+1;
+						//this.songList[i]["key"]=i;
+						if(this.songList[i]["songlistkey"]==undefined)this.songList[i]["songlistkey"]=this.songList[i]["id"]+Math.random();
 						this.songList[i]["bgcolor"]="#dff"
+					}
+				},
+				playList:function(){
+					for(i=0;i<this.playList.length;i++){
+						//this.playList[i]["key"]=this.playList[i].id;
+						if(this.playList[i]["playlistkey"]==undefined)this.playList[i]["playlistkey"]=this.playList[i]["id"]+Math.random();
+						this.playList[i]["bgcolor"]="#dff"
 					}
 				}
 			},
 			created: function(){
+				_this=this;
 				setInterval(this.up_lrc,100);
+				axios.get("https://v1.hitokoto.cn").then(function(r){
+					_this.hitokoto=r.data.hitokoto+"——"+r.data.from;
+				})
+				setInterval(function(){
+					axios.get("https://v1.hitokoto.cn").then(function(r){
+						_this.hitokoto=r.data.hitokoto+"——"+r.data.from;
+					})
+				},10000)
 			}
 		});
 		
 		Vue.component("music-list",{
-			props:["song"],
+			props:["song","index"],
 			template:`
 				<div class="alert alert-info"
 					:style="{'background-color':song.bgcolor,'border-color':song.bgcolor}">
-					<span class="badge badge-pill badge-warning">{{song.key}}</span>
+					<span class="badge badge-pill badge-warning">{{index+1}}</span>
+					<span>{{song.name}}</span>
+					<span class="badge badge-pill badge-primary" 
+						v-for="i in song.artists"  @click="$emit('search',['SONG',i.name])">
+						{{i.name}}
+					</span>
+					<span class="badge badge-pill badge-info"
+						@click="$emit('search',['SONG',song.album.name])">
+						{{song.album.name}}
+					</span>
+					<i class="iconfont iconbofangsanjiaoxing" title="播放" @click="$emit('play',song.id)"></i>
+					<i class="iconfont iconicon-test" title="添加到播放列表" @click="$emit('add',song.id)"></i>
+					<i class="iconfont iconxiazai" title="下载" @click="$emit('download',song.id)"></i>
+					<i class="iconfont iconwendang" title="歌词" @click="$emit('lyric',song.id)"></i>
+				</div>
+				`
+		});
+		
+		Vue.component("play-music-list",{
+			props:["song","index"],
+			template:`
+				<div class="alert alert-info"
+					:style="{'background-color':song.bgcolor,'border-color':song.bgcolor}">
+					<span class="badge badge-pill badge-warning">{{index+1}}</span>
 					<span>{{song.name}}</span>
 					<span class="badge badge-pill badge-primary" 
 						v-for="i in song.artists"  @click="$emit('search',['SONG',i.name])">
@@ -406,8 +600,28 @@
 					</span>
 					<i class="iconfont iconbofangsanjiaoxing" title="播放" @click="$emit('play',song.id)"></i>
 					<i class="iconfont iconxiazai" title="下载" @click="$emit('download',song.id)"></i>
+					<i class="iconfont iconwendang" title="歌词" @click="$emit('lyric',song.id)"></i>
+					<i class="iconfont iconshang" title="上移" @click="goup(index)"></i>
+					<i class="iconfont iconxia" title="下移" @click="godown(index)"></i>
+					<i class="iconfont iconshanchu" title="删除" @click="_this.playList.splice(index,1)"></i>
 				</div>
-				`
+				`,
+			methods:{
+				goup: function(key){
+					pl=_this.playList.concat();
+					if(key==0)return;
+					key2=(key-1+pl.length)%pl.length;
+					Vue.set(vm.playList,key,pl[key2]);
+					Vue.set(vm.playList,key2,pl[key]);
+				},
+				godown: function(key){
+					pl=_this.playList.concat();
+					if(key==pl.length-1)return;
+					key2=(key+1+pl.length)%pl.length;
+					Vue.set(vm.playList,key,pl[key2]);
+					Vue.set(vm.playList,key2,pl[key]);
+				}
+			}
 		});
 		
 	</script>
