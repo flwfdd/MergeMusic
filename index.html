@@ -89,7 +89,7 @@
 						<option v-for="i in looptypes" :value="i.value">{{i.text}}</option>
 					</select>
 					<button class="form-control col-4" @click="playNext();" style="text-align: left;">下一首</button>
-					<button class="form-control col-4" @click="showPlayList=(!showPlayList)" style="text-align: left;">{{showPlayList?"关闭":"打开"}}播放列表</button>
+					<button class="form-control col-4" @click="showPlayList=(!showPlayList)" style="text-align: left;">{{showPlayList?"关闭":"打开"}}列表</button>
 				</div>
 				<div class="row">
 					<audio style="width:100%;outline: medium;" ref="player" id="player" :src="nowmurl" controls="controls" autoplay="autoplay"></audio>
@@ -253,7 +253,7 @@
 						.then(function(response){
 							_this.nowlrcs=[];
 							r=response;
-							if(response.data.nolyric || response.data.nolyric==undefined){
+							if(response.data.nolyric || response.data.lrc==undefined){
 								_this.nowlrcs=[[0,"木有歌词哦"]];
 								_this.playing--;
 								return;
