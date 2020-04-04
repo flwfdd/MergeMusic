@@ -407,7 +407,7 @@
 						{{i.name}}
 					</span>
 					<span class="badge badge-pill badge-info" v-if="music.album.name!=''"
-						@click="_this.startSearch(['music',i.name])">
+						@click="_this.startSearch(['music',music.album.name])">
 						{{music.album.name}}
 					</span>
 					<span v-if="(music.type!='music'&&list.length==0)" class="badge badge-pill badge-info" 
@@ -474,11 +474,11 @@
 					:style="{'background-color':music.color,'border-color':music.color}">
 					<span class="badge badge-pill badge-warning">{{index+1}}</span>
 					<span>{{music.name}}</span>
-					<span class="badge badge-pill badge-primary" 
+					<span class="badge badge-pill badge-primary"
 						v-for="i in music.artist"  @click="_this.startSearch(['music',i.name])">
 						{{i.name}}
 					</span>
-					<span class="badge badge-pill badge-info"
+					<span class="badge badge-pill badge-info" v-if="music.album.name!=''"
 						@click="_this.startSearch(['music',music.album.name])">
 						{{music.album.name}}
 					</span>
