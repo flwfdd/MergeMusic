@@ -3,10 +3,10 @@
 
 功能
 * [x] 多平台音乐混合播放
-* [x] 音乐歌词图片播放及下载
+* [x] 音乐歌词图片下载
 * [x] 播放列表管理
 * [x] 强大的搜索功能
-* [x] B站视频当音乐听
+* [x] B站视频作音乐听
 * [x] ~~歌词音频可视化~~
 
 ### 基于以下模块
@@ -14,8 +14,12 @@
 * Vuetify
 * [网易云音乐API](https://github.com/Binaryify/NeteaseCloudMusicApi)
 * [QQ音乐API](https://github.com/jsososo/QQMusicApi)
-* B站原生api
-* 阿里云函数计算
+* B站原生API
+* Python
+
+后端部分详细介绍请看[backend文件夹]("https://github.com/flwfdd/MergeMusic/tree/master/backend")。
+
+（长时间以来修修补补代码堪称屎山Orz
 
 ### 开发日志
 @20220104
@@ -25,7 +29,7 @@
 
 @20200404
 
-基本上重构了一遍，统一简化了处理流程，尽量把东西都扔到`API`上。将所有内容都按照下面的格式处理
+基本上重构了一遍，统一简化了处理流程，尽量把东西都扔到`API`上。统一了`API`的返回格式。
 ```json
 [{
     "type": "格式，api根据这个确定返回内容。有music|list|p|up|user|fav，b站层级比较多",
@@ -34,9 +38,7 @@
     "album": {
       "name": "专辑名称"
     },
-    "artist": [{
-      "name": "艺术家名字"
-      }]
+    "artist": ["艺术家名字"]
 }]
 ```
 增加了`bilibili`的功能，但是必须有服务器缓存音乐才行，用了阿里云的学生机，反正服务器上行带宽是无限的，下行用`HTTP 206`速度够的，问题也不大。

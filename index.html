@@ -11,7 +11,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/axios@0.21.0/dist/axios.min.js"></script>
 	<link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
-	<link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
 	<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/vue-clipboard2@0.3.1/dist/vue-clipboard.min.js"></script>
@@ -117,25 +117,38 @@
 				<v-row justify="center">
 					<v-col class="pa-0" xl=6 lg=7 md=8 sm=10 xs=12>
 						<v-card class="op" justify="center" outlined>
-							<p class="ma-0 mb-n4" id="sand">云南师大附中学联网络部 版权所有</p>
+							<!-- <p class="ma-0 mb-n4" id="sand">云南师大附中学联网络部 版权所有</p> -->
+							<v-container class="mb-n3">
+								<v-row justify="center">
+									<v-chip color="pink lighten-3" small outlined
+										href="https://space.bilibili.com/27482524" target="_blank">
+										<v-icon small>mdi-television-classic</v-icon>bilibili@范滇东
+									</v-chip>
+									<v-chip color="cyan lighten-3" small outlined
+										href="https://github.com/flwfdd/MergeMusic" target="_blank">
+										<v-icon small>mdi-github</v-icon>Github
+									</v-chip>
+								</v-row>
+							</v-container>
+
 							<h1 id="title">MergeMusic</h1>
 							<p class="blue-grey--text text--darken-2 mx-2 mb-0" style="text-align: center;">{{hitokoto}}
 							</p>
 
 							<v-row class="ma-2" justify="center">
 								<v-col class="pa-0" cols=12>
-									<v-text-field outlined dense hide-details label="搜索" v-model="name"
-										append-icon="search" @click:append="off=0;search();"
-										@keyup.13="off=0;search();">
+									<v-text-field outlined dense hide-details color="cyan" label="搜索" v-model="name"
+										append-icon="search" @click:append="off=0;Search();"
+										@keyup.13="off=0;Search();">
 									</v-text-field>
 								</v-col>
 
 								<v-col class="px-0 pr-1" cols=6>
-									<v-select outlined dense hide-details label="平台" v-model="platform"
+									<v-select outlined dense hide-details color="cyan" item-color="cyan" label="平台" v-model="platform"
 										:items="platforms"></v-select>
 								</v-col>
 								<v-col class="px-0 pl-1" cols=6>
-									<v-select outlined dense hide-details label="类型" v-model="type" :items="types">
+									<v-select outlined dense hide-details color="cyan" item-color="cyan" label="类型" v-model="type" :items="types">
 									</v-select>
 								</v-col>
 
@@ -171,7 +184,7 @@
 						</v-card>
 
 						<v-card class="op">
-							<v-tabs grow v-model="tab">
+							<v-tabs grow v-model="tab" color="cyan">
 								<v-tab v-for="i in tabs" :key="i.tab">{{i.text}}</v-tab>
 							</v-tabs>
 
@@ -198,7 +211,8 @@
 									</v-expand-transition>
 
 
-									<v-btn block color="success" @click="search()" :loading="searching" :disabled="end">
+									<v-btn block color="cyan lighten-4" @click="Search()" :loading="searching"
+										:disabled="end">
 										{{end?'木有了...':'加载更多'}}
 									</v-btn>
 								</v-tab-item>
@@ -223,7 +237,7 @@
 
 				<v-dialog v-model="dialog_open">
 					<v-card v-if="dialog_open">
-						<v-card-title>{{dialog_data.name}}</v-card-title>
+						<v-card-title>{{dialog_data.name}} - {{dialog_data.artist.join(" | ")}}</v-card-title>
 						<v-container>
 							<v-row justify="center">
 								<v-col v-if="dialog_data.type=='music' || dialog_data.type=='p'" cols=11>
@@ -235,7 +249,7 @@
 								<v-col cols=11>
 									<p class="ma-0">专辑：
 										<v-chip small outlined v-if="dialog_data.album.name" :color="dialog_data.color"
-											@click="_this.StartSearch(dialog_data.album.name)">
+											@click="StartSearch(dialog_data.album.name)">
 											{{dialog_data.album.name}}</v-chip>
 									</p>
 								</v-col>
@@ -243,7 +257,7 @@
 								<v-col cols=11>
 									<p class="ma-0">作者：
 										<v-chip small outlined v-for="i in dialog_data.artist" :key="i"
-											:color="dialog_data.color" @click="_this.StartSearch(i)">{{i}}</v-chip>
+											:color="dialog_data.color" @click="StartSearch(i)">{{i}}</v-chip>
 									</p>
 								</v-col>
 
@@ -268,12 +282,17 @@
 									<v-btn rounded outlined class="my-1" :color="dialog_data.color"
 										v-if="dialog_data.type=='music'" @click="Download(dialog_data.mid,'lrc')">
 										<v-icon left>receipt</v-icon>
-										下载歌词
+										复制歌词
 									</v-btn>
 									<v-btn rounded outlined class="my-1" :color="dialog_data.color"
 										v-if="dialog_data.type=='music'" @click="Download(dialog_data.mid,'img')">
 										<v-icon left>image</v-icon>
 										封面图片
+									</v-btn>
+									<v-btn rounded outlined class="my-1" :color="dialog_data.color"
+										v-if="dialog_data.type=='music'" @click="Download(dialog_data.mid,'share')">
+										<v-icon left>share</v-icon>
+										分享链接
 									</v-btn>
 								</v-col>
 							</v-row>
@@ -286,7 +305,8 @@
 						<v-card-title>点击复制到剪贴板</v-card-title>
 						<v-card-actions>
 							<v-spacer></v-spacer>
-							<v-btn color="green darken-1" text v-clipboard:copy="clip_tmp">复制</v-btn>
+							<v-btn color="green darken-1" text v-clipboard:copy="clip_tmp"
+								v-clipboard:success="ClipSuccess" v-clipboard:error="">复制</v-btn>
 						</v-card-actions>
 					</v-card>
 				</v-dialog>
@@ -318,7 +338,9 @@
 			el: "#app",
 			router,
 			data: {
-				name: "夜航星",
+				apiurl: "https://1426531544223608.cn-hangzhou.fc.aliyuncs.com/2016-08-15/proxy/music.LATEST/all",
+				// apiurl: "http://127.0.0.1:9000",
+				name: "",
 				platform: "C",
 				type: "music",
 				off: 0,
@@ -338,8 +360,6 @@
 				clip_dialog: false,
 				snackbar: false,
 				snackbar_msg: "",
-				apiurl: "https://1426531544223608.cn-hangzhou.fc.aliyuncs.com/2016-08-15/proxy/music.LATEST/all",
-				//apiurl: "http://127.0.0.1:9000",
 				tab: 0,
 				tabs: [
 					{ text: "搜索", tab: "search" },
@@ -372,7 +392,7 @@
 				playList: []
 			},
 			methods: {
-				search: function () {
+				Search: function () { //搜索
 					this.showPlayList = false;
 					this.tab = 0;
 					this.dialog_open = false;
@@ -388,38 +408,38 @@
 							offset: this.off,
 							limit: this.lim
 						}
-					}).then(function (r) {
+					}).then((r) => {
 						r = r.data;
-						if (_this.off == 0) _this.end = false, _this.musicList = []; //搜索归零
-						if (r.length == 0) _this.end = true;
-						if (!_this.end) {
+						if (this.off == 0) this.end = false, this.musicList = []; //搜索归零
+						if (r.length == 0) this.end = true;
+						if (!this.end) {
 							for (i in r) r[i].color = color;
-							_this.musicList = _this.musicList.concat(r);
-							if (r.length < _this.lim) _this.end = true;
+							this.musicList = this.musicList.concat(r);
+							if (r.length < this.lim) this.end = true;
 						}
-						_this.off++;
-						_this.searching = false;
+						this.off++;
+						this.searching = false;
 					});
 				},
-				PlayMusic: function (mid) {
+				PlayMusic: function (mid) { //播放音乐
 					axios.get(this.apiurl + "/music/", {
 						params: {
 							mid: mid,
 							type: "music",
 						}
 					})
-						.then(function (response) {
-							_this.nowmusic = response.data
-							document.querySelector("#bgimg").style.backgroundImage = "url(" + _this.nowmusic.img + ")";
-							_this.nowlrc = _this.nowtlrc = ""
-							_this.nowmusic.lrcs = _this.DecodeLrc(response.data.lrc);
-							if (response.data.tlrc) _this.nowmusic.tlrcs = _this.DecodeLrc(response.data.tlrc);
+						.then((response) => {
+							this.nowmusic = response.data
+							document.querySelector("#bgimg").style.backgroundImage = "url(" + this.nowmusic.img + ")";
+							this.nowlrc = this.nowtlrc = ""
+							this.nowmusic.lrcs = this.DecodeLrc(response.data.lrc);
+							if (response.data.tlrc) this.nowmusic.tlrcs = this.DecodeLrc(response.data.tlrc);
 
-							if (_this.nowmusic.src == "") {
-								_this.nowmusic.name = "出错了Orz将移除此歌";
-								setTimeout(_this.Delete, 3000, _this.nowmusic.mid);
+							if (this.nowmusic.src == "") {
+								this.nowmusic.name = "出错了Orz将移除此歌";
+								setTimeout(this.Delete, 3000, this.nowmusic.mid);
 							}
-							_this.AddList([response.data], "front");
+							this.AddList([response.data], "front");
 						})
 				},
 				DecodeLrc: function (s) { //歌词解码
@@ -433,7 +453,7 @@
 					}
 					return ls;
 				},
-				Delete: function (mid) {
+				Delete: function (mid) { //从播放列表删除歌曲
 					for (i in this.playList) {
 						if (this.playList[i].mid == mid) {
 							this.playList.splice(i, 1);
@@ -441,7 +461,7 @@
 						}
 					}
 				},
-				up_lrc: function () { //歌词更新
+				UpLrc: function () { //歌词更新
 					if (!this.nowmusic.lrcs) return;
 					t = this.$refs["player"].currentTime;
 					for (i = this.nowmusic.lrcs.length - 1; i >= 0; i--) {
@@ -460,7 +480,7 @@
 						}
 					}
 				},
-				PlayNext: function () {
+				PlayNext: function () { //下一首
 					au = this.$refs['player'];
 					if (this.looptype == 0) {
 						if (this.playList.length) {
@@ -486,12 +506,18 @@
 						au.play();
 					}
 				},
-				StartSearch: function (s) {
+				StartSearch: function (s) { //新建搜索
 					this.name = s;
 					this.off = 0;
-					this.search();
+					this.type = "music";
+					this.Search();
 				},
 				Download: function (mid, type) { //下载
+					if (type == 'share') {
+						this.clip_tmp = window.location.origin + window.location.pathname + "#/?mid=" + mid;
+						this.clip_dialog = true;
+						return;
+					}
 					axios.get(this.apiurl + "/music/", {
 						params: {
 							mid: mid,
@@ -503,41 +529,42 @@
 								window.open(r.data.src, "_blank");
 							}
 							if (type == "lrc") {
-								s = r.data.lrc;
-								this.Clip(s);
+								this.clip_tmp = r.data.lrc + "\n\n" + r.data.tlrc;
+								this.clip_dialog = true;
 							}
 							if (type == "img") {
 								window.open(r.data.img, "_blank");
 							}
 						})
 				},
-				AddMusic: function (music, type) {
-					if (music.type == "music") _this.AddList([music], type);
-					else {
-						axios.get(this.apiburl + "/music/", {
+				AddMusic: function (music, type) { //添加歌曲或歌单到播放列表
+					if (music.type == "music") this.AddList([music], type);
+					else { //如果是歌单什么的就要先获取歌曲列表
+						axios.get(this.apiurl + "/music/", {
 							params: {
 								mid: music.mid,
 								type: music.type,
 							}
 						})
 							.then((r) => {
-								_this.AddList(r.data, type);
+								this.AddList(r.data, type);
+								this.Delete(music.mid);
 							});
 					}
 				},
-				AddList: function (list, type) {
-					if (type == "replace") {
+				AddList: function (list, type) { //添加数个音乐到播放列表
+					if (type == "replace") { //替换
 						this.playList = list.concat();
 						this.tab = 1;
 					}
 					else {
 						music_list = [];
-						if (type == "front") {
+						if (type == "front") { //添加到前部 需要去重
 							for (i in list) music_list.push(list[i].mid);
 							for (i in this.playList) if (music_list.indexOf(this.playList[i].mid) != -1) this.playList.splice(i, 1);
 							this.playList = list.concat(this.playList);
 						}
-						else {
+						else { //添加到尾部
 							for (i in this.playList) music_list.push(this.playList[i].mid);
 							for (i in list) if (music_list.indexOf(list[i].mid) != -1) list.splice(i, 1);
 							this.playList = this.playList.concat(list);
@@ -546,55 +573,39 @@
 					}
 
 				},
-				AddAll: function (type) {
+				AddAll: function (type) { //把搜索列表中的添加到播放列表
 					this.AddList(this.musicList.concat(), type);
 				},
-				UpHitokoto: function () {
+				UpHitokoto: function () { //更新一言
 					axios.get("https://v1.hitokoto.cn/")
-						.then(function (res) {
-							_this.hitokoto = res.data.hitokoto + "  ——" + res.data.from;
+						.then((res) => {
+							this.hitokoto = res.data.hitokoto + "  ——" + res.data.from;
 						})
 				},
-				Clip: function (msg) {
-					this.clip_tmp = msg;
-					this.clip_dialog = true;
+				ClipSuccess(e) { //剪贴板回调
+					this.clip_dialog = false;
+					this.Msg("复制成功");
 				},
-				Msg: function (msg) {
+				Msg: function (msg) { //提示框
 					this.snackbar_msg = msg;
 					this.snackbar = true;
 				}
 			},
 			watch: {
 				playList: function () {
-					//将有分p的解包
-					for (i in this.playList) {
-						if ("p" in this.playList[i] && this.playList[i].p > 1) {
-							url = this.baseburl + "bilimusic/" + "?type=p&mid=" + this.playList[i].mid;
-							axios.get(url)
-								.then(function (r) {
-									orimid = r.data[0].mid.substr(0, r.data[0].mid.search("\\u003F"));
-									for (i in _this.playList) {
-										if (_this.playList[i].mid == orimid) {
-											_this.playList.splice(i, 1);
-											for (j = r.data.length - 1; j >= 0; j--) {
-												_this.playList.splice(i, 0, r.data[j]);
-											}
-											return;
-										}
-									}
-								});
-						}
-					}
-
 					//添加颜色
 					for (i in this.playList) {
 						this.playList[i].color = this.colors[this.playList[i].mid.substr(0, 1)];
 					}
 
-					//播放第一个
+					//播放列表第一个
 					if (this.playList.length) {
-						if (this.nowmusic.mid != this.playList[0].mid) {
-							this.PlayMusic(this.playList[0].mid);
+						let mmusic = this.playList[0];
+						if (this.nowmusic.mid != mmusic.mid) {
+							if (mmusic.type == "music") this.PlayMusic(mmusic.mid);
+							else {
+								this.AddMusic(mmusic, 'front');
+							}
 						}
 					}
 					else {
@@ -604,32 +615,27 @@
 			},
 			created: function () {
 				_this = this;
-				this.UpHitokoto();
 
-				setInterval(this.up_lrc, 100);
-				axios.get("https://v1.hitokoto.cn").then(function (r) {
-					_this.hitokoto = r.data.hitokoto + "——" + r.data.from;
-				});
-				setInterval(function () {
-					axios.get("https://v1.hitokoto.cn").then(function (r) {
-						_this.hitokoto = r.data.hitokoto + "——" + r.data.from;
-					})
-				}, 10000);
-				setTimeout(function () {
-					_this.$refs["player"].addEventListener('ended', function () {
-						_this.PlayNext();
+				setInterval(this.UpLrc, 100);
+				this.UpHitokoto();
+				setInterval(this.UpHitokoto, 10000);
+				setTimeout(() => {
+					this.$refs["player"].addEventListener('ended', () => {
+						this.PlayNext();
 					});
 				}, 1000)
 
-				if (_this.$route.query.mid) {
-					_this.showPlayList = true;
-					_this.PlayMusic(_this.$route.query.mid);
+				if (this.$route.query.mid) {
+					this.showPlayList = true;
+					this.tab = 1;
+					this.PlayMusic(this.$route.query.mid);
 				}
 
 				this.Msg("欢迎来到Ours-MergeMusic~");
 			}
 		});
 
+		//搜索列表
 		Vue.component("music-list", {
 			props: ["music", "index"],
 			data: function () {
@@ -704,11 +710,12 @@
 		});
 
 
+		//播放列表
 		Vue.component("play-music-list", {
 			props: ["music", "index"],
 			template: `
 			<div>
-			<v-list-item @click="music.type=='music'?_this.PlayMusic(music.mid):GetList()" :color="music.color">
+			<v-list-item @click="_this.AddMusic(music,'front')" :color="music.color">
 				<v-list-item-avatar>
 					<v-chip outlined :color="music.color">{{index+1}}</v-chip>
 				</v-list-item-avatar>
@@ -716,13 +723,13 @@
 				<v-list-item-content>
 					<v-list-item-title>{{music.name}}</v-list-item-title>
 					<v-list-item-subtitle>
-							<v-btn icon small :color="music.color" @click.stop="GoUp(index)">
+							<v-btn icon small :color="music.color" @click.stop="GoUp()">
 								<v-icon>arrow_upward</v-icon>
 							</v-btn>
-							<v-btn icon small :color="music.color" @click.stop="GoDown(index)">
+							<v-btn icon small :color="music.color" @click.stop="GoDown()">
 								<v-icon>arrow_downward</v-icon>
 							</v-btn>
-							<v-btn icon small :color="music.color" @click.stop="Delete(index)">
+							<v-btn icon small :color="music.color" @click.stop="Delete()">
 								<v-icon>delete</v-icon>
 							</v-btn>
 							<template v-if="music.album.name">{{music.album.name}} - </template>
@@ -739,22 +746,24 @@
 			</div>
 				`,
 			methods: {
-				GoUp: function (key) {
+				GoUp: function () {
+					key = this.index;
 					pl = _this.playList.concat();
 					if (key == 0) return;
 					key2 = (key - 1 + pl.length) % pl.length;
 					Vue.set(vm.playList, key, pl[key2]);
 					Vue.set(vm.playList, key2, pl[key]);
 				},
-				GoDown: function (key) {
+				GoDown: function () {
+					key = this.index;
 					pl = _this.playList.concat();
 					if (key == pl.length - 1) return;
 					key2 = (key + 1 + pl.length) % pl.length;
 					Vue.set(vm.playList, key, pl[key2]);
 					Vue.set(vm.playList, key2, pl[key]);
 				},
-				Delete: function (key) {
-					_this.playList.splice(key, 1);
+				Delete: function () {
+					_this.playList.splice(this.index, 1);
 				},
 				OpenDialog: function () {
 					_this.dialog_data = this.music;
