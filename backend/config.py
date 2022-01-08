@@ -18,8 +18,8 @@ api_base_url = {
 if True:
     # oss配置
     import oss2
-    oss_auth = oss2.Auth('xxxx',
-                         'xxxx')
+    oss_auth = oss2.Auth('xxx',
+                         'xxx')
     oss_bucket = oss2.Bucket(
         oss_auth, 'http://oss-cn-hangzhou.aliyuncs.com', 'su-ours-public')
     oss_path = "ori/bili/"
@@ -39,5 +39,7 @@ if True:
         oss_bucket.put_object(oss_path+filename, bin)
         return oss_url+filename
 
-# 网易云会员cookie
+# 网易云账号cookie
 C_vip_cookie = ""
+# QQ音乐账号cookie
+Q_vip_cookie = ""

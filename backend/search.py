@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2021-11-13 16:30:46
-LastEditTime: 2022-01-05 14:01:21
+LastEditTime: 2022-01-08 17:17:56
 Description: 搜索模块
 _(:з」∠)_
 '''
@@ -129,26 +129,11 @@ def bili_search(keyword, Type, limit, offset):
 
 # 入口函数
 def main(dic):
-    try:
-        offset = str(int(dic['offset']))
-    except:
-        offset = "0"
-    try:
-        limit = dic['limit']
-    except:
-        limit = "20"
-    try:
-        keyword = dic['keyword']
-    except:
-        keyword = ""
-    try:
-        Type = dic['type']
-    except:
-        Type = "music"
-    try:
-        platform = dic['platform']
-    except:
-        platform = "C"
+    offset=str(int(dic.get('offset',0)))
+    limit=dic.get('limit','20')
+    keyword=dic.get('keyword','')
+    Type=dic.get('type','music')
+    platform=dic.get('platform','C')
 
     if platform == "C":
         res = cloud_search(keyword, Type, limit, offset)

@@ -144,11 +144,12 @@
 								</v-col>
 
 								<v-col class="px-0 pr-1" cols=6>
-									<v-select outlined dense hide-details color="cyan" item-color="cyan" label="平台" v-model="platform"
-										:items="platforms"></v-select>
+									<v-select outlined dense hide-details color="cyan" item-color="cyan" label="平台"
+										v-model="platform" :items="platforms"></v-select>
 								</v-col>
 								<v-col class="px-0 pl-1" cols=6>
-									<v-select outlined dense hide-details color="cyan" item-color="cyan" label="类型" v-model="type" :items="types">
+									<v-select outlined dense hide-details color="cyan" item-color="cyan" label="类型"
+										v-model="type" :items="types">
 									</v-select>
 								</v-col>
 
@@ -427,20 +428,19 @@
 							mid: mid,
 							type: "music",
 						}
-					})
-						.then((response) => {
-							this.nowmusic = response.data
-							document.querySelector("#bgimg").style.backgroundImage = "url(" + this.nowmusic.img + ")";
-							this.nowlrc = this.nowtlrc = ""
-							this.nowmusic.lrcs = this.DecodeLrc(response.data.lrc);
-							if (response.data.tlrc) this.nowmusic.tlrcs = this.DecodeLrc(response.data.tlrc);
+					}).then((response) => {
+						this.nowmusic = response.data
+						document.querySelector("#bgimg").style.backgroundImage = "url(" + this.nowmusic.img + ")";
+						this.nowlrc = this.nowtlrc = ""
+						this.nowmusic.lrcs = this.DecodeLrc(response.data.lrc);
+						if (response.data.tlrc) this.nowmusic.tlrcs = this.DecodeLrc(response.data.tlrc);
 
-							if (this.nowmusic.src == "") {
-								this.nowmusic.name = "出错了Orz将移除此歌";
-								setTimeout(this.Delete, 3000, this.nowmusic.mid);
-							}
-							this.AddList([response.data], "front");
-						})
+						if (this.nowmusic.src == "") {
+							this.nowmusic.name = "出错了Orz将移除此歌";
+							setTimeout(this.Delete, 3000, this.nowmusic.mid);
+						}
+						this.AddList([response.data], "front");
+					});
 				},
 				DecodeLrc: function (s) { //歌词解码
 					l = s.split("\n");
@@ -539,17 +539,15 @@
 				},
 				AddMusic: function (music, type) { //添加歌曲或歌单到播放列表
 					if (music.type == "music") this.AddList([music], type);
-					else { //如果是歌单什么的就要先获取歌曲列表
+					else { //如果是歌单什么的就要先获取歌曲列表（解包）
 						axios.get(this.apiurl + "/music/", {
 							params: {
 								mid: music.mid,
 								type: music.type,
 							}
-						})
-							.then((r) => {
-								this.AddList(r.data, type);
-								this.Delete(music.mid);
-							});
+						}).then((r) => {
+							this.AddList(r.data, type);
+						}).catch((e) => { }).then(() => { this.Delete(music.mid); });
 					}
 				},
 				AddList: function (list, type) { //添加数个音乐到播放列表
@@ -615,6 +613,17 @@
 			},
 			created: function () {
 				_this = this;
+
+				axios.interceptors.response.use(response => {
+					// 2xx 范围内的状态码都会触发该函数。
+					// 对响应数据做点什么
+					return response;
+				}, error => {
+					// 超出 2xx 范围的状态码都会触发该函数。
+					// 对响应错误做点什么
+					this.Msg("出错啦QwQ");
+					return Promise.reject(error);
+				});
 
 				setInterval(this.UpLrc, 100);
 				this.UpHitokoto();
@@ -778,11 +787,12 @@
 		var _hmt = _hmt || [];
 		(function () {
 			var hm = document.createElement("script");
-			hm.src = "https://hm.baidu.com/hm.js?a6bc92b553163ae26fadce961a0713cf";
+			hm.src = "https://hm.baidu.com/hm.js?f2df3b6029c8fc35e1d4f5986f53b914";
 			var s = document.getElementsByTagName("script")[0];
 			s.parentNode.insertBefore(hm, s);
 		})();
 	</script>
+
 
 </body>
 

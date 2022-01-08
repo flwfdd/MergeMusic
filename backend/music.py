@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2021-12-23 23:38:26
-LastEditTime: 2022-01-05 15:21:03
+LastEditTime: 2022-01-08 19:11:15
 Description: 音乐模块
 _(:з」∠)_
 '''
@@ -121,7 +121,7 @@ def cloud(mid, Type):
 
 def qq_music(mid):
     dic = {"lrc": '', "tlrc": '', "src": '',
-           "img": '', 'type': 'music', 'mid': 'C'+mid}
+           "img": '', 'type': 'music', 'mid': 'Q'+mid}
 
     # 获取基本信息
     try:
@@ -141,8 +141,7 @@ def qq_music(mid):
     # 获取播放链接
     try:
         url = api_url['Q']+'/song/url?id={}&mediaId={}'
-        r = requests.get(url.format(
-            mid, data['file']['media_mid']), headers=header)
+        r = requests.get(url.format(mid, data['file']['media_mid']),headers={"cookie":config.Q_vip_cookie})
         dic['src'] = json.loads(r.text)['data']
     except:
         dic['src'] = ""
