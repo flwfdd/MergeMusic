@@ -106,6 +106,11 @@
 			opacity: 0;
 			transform: translateY(30px);
 		}
+
+		::selection {
+			color: #fff;
+			background: #00bcd4;
+		}
 	</style>
 </head>
 
@@ -205,8 +210,8 @@
 									<v-expand-transition>
 										<v-list class="op0" two-line>
 											<v-list-item-group>
-												<music-list v-for="(item,index) in musicList" :music="item" :key="index"
-													:index="index"></music-list>
+												<music-list v-for="(item,index) in search_list" :music="item"
+													:key="index" :index="index"></music-list>
 											</v-list-item-group>
 										</v-list>
 									</v-expand-transition>
@@ -219,11 +224,23 @@
 								</v-tab-item>
 
 								<v-tab-item key="list">
+									<v-container>
+										<v-row>
+											<v-col class="pa-0 px-1" cols=6>
+												<v-btn outlined block @click="ClearPlayList()">清空列表</v-btn>
+											</v-col>
+											<v-col class="pa-0 px-1" cols=6>
+												<v-btn outlined block @click="ChangeSaveList()">
+													保存列表：{{save_list?"开":"关"}}
+												</v-btn>
+											</v-col>
+										</v-row>
+									</v-container>
 
 									<v-list class="op0" two-line>
 										<v-list-item-group>
 											<transition-group name="translist">
-												<play-music-list v-for="(item,index) in playList" :music="item"
+												<play-music-list v-for="(item,index) in play_list" :music="item"
 													:key="item.mid" :index="index"></play-music-list>
 											</transition-group>
 										</v-list-item-group>
@@ -312,6 +329,15 @@
 					</v-card>
 				</v-dialog>
 
+				<v-dialog v-model="save_list_dialog" persistent>
+					<v-card>
+						<v-card-title>请选择要保留的列表
+							<v-btn block color="cyan" text @click="SaveListDialogCallback(0)">使用保存的列表覆盖当前列表</v-btn>
+							<v-btn block color="cyan" text @click="SaveListDialogCallback(1)">使用当前列表覆盖保存的列表</v-btn>
+						</v-card-title>
+					</v-card>
+				</v-dialog>
+
 				<v-snackbar v-model="snackbar">
 					{{snackbar_msg}}
 					<template v-slot:action="{attrs}">
@@ -334,320 +360,10 @@
 			routes // (缩写) 相当于 routes: routes
 		})
 
-		var vm = new Vue({ //主应用
-			vuetify: new Vuetify(),
-			el: "#app",
-			router,
-			data: {
-				apiurl: "https://1426531544223608.cn-hangzhou.fc.aliyuncs.com/2016-08-15/proxy/music.LATEST/all",
-				// apiurl: "http://127.0.0.1:9000",
-				name: "",
-				platform: "C",
-				type: "music",
-				off: 0,
-				lim: 20,
-				end: false,
-				searching: false,
-				nowmusic: {},
-				nowlrc: "",
-				nowtlrc: "",
-				playing: 0,
-				looptype: 0,
-				hitokoto: "",
-				showPlayList: false,
-				dialog_open: false,
-				dialog_data: {},
-				clip_tmp: "",
-				clip_dialog: false,
-				snackbar: false,
-				snackbar_msg: "",
-				tab: 0,
-				tabs: [
-					{ text: "搜索", tab: "search" },
-					{ text: "列表", tab: "list" },
-				],
-				platforms: [
-					{ "text": "网易云", "value": "C" },
-					{ "text": "QQ", "value": "Q" },
-					{ "text": "bilibili", "value": "B" },
-					// { "text": "SakuraCloud", "value": "S" }
-				],
-				types: [
-					{ "text": "歌曲", "value": "music" },
-					{ "text": "歌单", "value": "list" },
-					{ "text": "用户|UP主", "value": "user" },
-					{ "text": "歌词", "value": "lrc" }
-				],
-				looptypes: [
-					{ "text": "顺序", "value": "0" },
-					{ "text": "单曲", "value": "1" },
-					{ "text": "随机", "value": "2" }
-				],
-				colors: {
-					"C": "#C20C0C",
-					"Q": "#68D9A3",
-					"B": "#FCA6BF",
-					"S": "#F9D2E0"
-				},
-				musicList: [],
-				playList: []
-			},
-			methods: {
-				Search: function () { //搜索
-					this.showPlayList = false;
-					this.tab = 0;
-					this.dialog_open = false;
-					//if(this.searching)return;
-					//console.log(this.platform+this.type+this.name);
-					this.searching = true;
-					color = this.colors[this.platform];
-					axios.get(this.apiurl + "/search/", {
-						params: {
-							platform: this.platform,
-							keyword: encodeURIComponent(this.name),
-							type: this.type,
-							offset: this.off,
-							limit: this.lim
-						}
-					}).then((r) => {
-						r = r.data;
-						if (this.off == 0) this.end = false, this.musicList = []; //搜索归零
-						if (r.length == 0) this.end = true;
-						if (!this.end) {
-							for (i in r) r[i].color = color;
-							this.musicList = this.musicList.concat(r);
-							if (r.length < this.lim) this.end = true;
-						}
-						this.off++;
-						this.searching = false;
-					});
-				},
-				PlayMusic: function (mid) { //播放音乐
-					axios.get(this.apiurl + "/music/", {
-						params: {
-							mid: mid,
-							type: "music",
-						}
-					}).then((response) => {
-						this.nowmusic = response.data
-						document.querySelector("#bgimg").style.backgroundImage = "url(" + this.nowmusic.img + ")";
-						this.nowlrc = this.nowtlrc = ""
-						this.nowmusic.lrcs = this.DecodeLrc(response.data.lrc);
-						if (response.data.tlrc) this.nowmusic.tlrcs = this.DecodeLrc(response.data.tlrc);
-
-						if (this.nowmusic.src == "") {
-							this.nowmusic.name = "出错了Orz将移除此歌";
-							setTimeout(this.Delete, 3000, this.nowmusic.mid);
-						}
-						this.AddList([response.data], "front");
-					});
-				},
-				DecodeLrc: function (s) { //歌词解码
-					l = s.split("\n");
-					ls = [];
-					for (i = 0; i < l.length; i++) {
-						if (l[i] == "") continue;
-						time_str = l[i].slice(1, l[i].search("]"));
-						t = time_str.split(":")[0] * 60 + time_str.split(":")[1] * 1.0;
-						ls.push([t, l[i].slice(l[i].search("]") + 1)]);
-					}
-					return ls;
-				},
-				Delete: function (mid) { //从播放列表删除歌曲
-					for (i in this.playList) {
-						if (this.playList[i].mid == mid) {
-							this.playList.splice(i, 1);
-							break;
-						}
-					}
-				},
-				UpLrc: function () { //歌词更新
-					if (!this.nowmusic.lrcs) return;
-					t = this.$refs["player"].currentTime;
-					for (i = this.nowmusic.lrcs.length - 1; i >= 0; i--) {
-						if (t >= this.nowmusic.lrcs[i][0]) {
-							this.nowlrc = this.nowmusic.lrcs[i][1];
-							break;
-						}
-					}
-
-					if (!this.nowmusic.tlrcs) return;
-					t = this.$refs["player"].currentTime;
-					for (i = this.nowmusic.tlrcs.length - 1; i >= 0; i--) {
-						if (t >= this.nowmusic.tlrcs[i][0]) {
-							this.nowtlrc = this.nowmusic.tlrcs[i][1];
-							break;
-						}
-					}
-				},
-				PlayNext: function () { //下一首
-					au = this.$refs['player'];
-					if (this.looptype == 0) {
-						if (this.playList.length) {
-							this.playList.push(this.playList.shift());
-							if (this.playList.length == 1) au.currentTime = 0, au.play();
-						}
-						else {
-							this.nowmusic.src = "";
-						}
-					}
-					if (this.looptype == 2) {
-						if (this.playList.length) {
-							ind = Math.floor(Math.random() * this.playList.length)
-							if (ind == 0) au.currentTime = 0, au.play();
-							else this.playList.unshift(this.playList.splice(ind, 1)[0]);
-						}
-						else {
-							this.nowmusic.src = "";
-						}
-					}
-					if (this.looptype == 1) {
-						au.currentTime = 0;
-						au.play();
-					}
-				},
-				StartSearch: function (s) { //新建搜索
-					this.name = s;
-					this.off = 0;
-					this.type = "music";
-					this.Search();
-				},
-				Download: function (mid, type) { //下载
-					if (type == 'share') {
-						this.clip_tmp = window.location.origin + window.location.pathname + "#/?mid=" + mid;
-						this.clip_dialog = true;
-						return;
-					}
-					axios.get(this.apiurl + "/music/", {
-						params: {
-							mid: mid,
-							type: "music",
-						}
-					})
-						.then((r) => {
-							if (type == "music") {
-								window.open(r.data.src, "_blank");
-							}
-							if (type == "lrc") {
-								this.clip_tmp = r.data.lrc + "\n\n" + r.data.tlrc;
-								this.clip_dialog = true;
-							}
-							if (type == "img") {
-								window.open(r.data.img, "_blank");
-							}
-						})
-				},
-				AddMusic: function (music, type) { //添加歌曲或歌单到播放列表
-					if (music.type == "music") this.AddList([music], type);
-					else { //如果是歌单什么的就要先获取歌曲列表（解包）
-						axios.get(this.apiurl + "/music/", {
-							params: {
-								mid: music.mid,
-								type: music.type,
-							}
-						}).then((r) => {
-							this.AddList(r.data, type);
-						}).catch((e) => { }).then(() => { this.Delete(music.mid); });
-					}
-				},
-				AddList: function (list, type) { //添加数个音乐到播放列表
-					if (type == "replace") { //替换
-						this.playList = list.concat();
-						this.tab = 1;
-					}
-					else {
-						music_list = [];
-						if (type == "front") { //添加到前部 需要去重
-							for (i in list) music_list.push(list[i].mid);
-							for (i in this.playList) if (music_list.indexOf(this.playList[i].mid) != -1) this.playList.splice(i, 1);
-							this.playList = list.concat(this.playList);
-						}
-						else { //添加到尾部
-							for (i in this.playList) music_list.push(this.playList[i].mid);
-							for (i in list) if (music_list.indexOf(list[i].mid) != -1) list.splice(i, 1);
-							this.playList = this.playList.concat(list);
-							this.Msg("已添加到列表(･∀･)");
-						}
-					}
-
-				},
-				AddAll: function (type) { //把搜索列表中的添加到播放列表
-					this.AddList(this.musicList.concat(), type);
-				},
-				UpHitokoto: function () { //更新一言
-					axios.get("https://v1.hitokoto.cn/")
-						.then((res) => {
-							this.hitokoto = res.data.hitokoto + "  ——" + res.data.from;
-						})
-				},
-				ClipSuccess(e) { //剪贴板回调
-					this.clip_dialog = false;
-					this.Msg("复制成功");
-				},
-				Msg: function (msg) { //提示框
-					this.snackbar_msg = msg;
-					this.snackbar = true;
-				}
-			},
-			watch: {
-				playList: function () {
-					//添加颜色
-					for (i in this.playList) {
-						this.playList[i].color = this.colors[this.playList[i].mid.substr(0, 1)];
-					}
-
-					//播放列表第一个
-					if (this.playList.length) {
-						let mmusic = this.playList[0];
-						if (this.nowmusic.mid != mmusic.mid) {
-							if (mmusic.type == "music") this.PlayMusic(mmusic.mid);
-							else {
-								this.AddMusic(mmusic, 'front');
-							}
-						}
-					}
-					else {
-						this.nowmusic = {};
-					}
-				}
-			},
-			created: function () {
-				_this = this;
-
-				axios.interceptors.response.use(response => {
-					// 2xx 范围内的状态码都会触发该函数。
-					// 对响应数据做点什么
-					return response;
-				}, error => {
-					// 超出 2xx 范围的状态码都会触发该函数。
-					// 对响应错误做点什么
-					this.Msg("出错啦QwQ");
-					return Promise.reject(error);
-				});
-
-				setInterval(this.UpLrc, 100);
-				this.UpHitokoto();
-				setInterval(this.UpHitokoto, 10000);
-				setTimeout(() => {
-					this.$refs["player"].addEventListener('ended', () => {
-						this.PlayNext();
-					});
-				}, 1000)
-
-				if (this.$route.query.mid) {
-					this.showPlayList = true;
-					this.tab = 1;
-					this.PlayMusic(this.$route.query.mid);
-				}
-
-				this.Msg("欢迎来到Ours-MergeMusic~");
-			}
-		});
-
-		//搜索列表
+		//搜索列表组件
 		Vue.component("music-list", {
 			props: ["music", "index"],
-			data: function () {
+			data() {
 				return {
 					"list": []
 				};
@@ -687,7 +403,7 @@
 			</div>
 				`,
 			methods: {
-				GetList: function () {
+				GetList() {
 					if (this.list.length) {
 						this.list = [];
 						return;
@@ -702,24 +418,24 @@
 							this.list = r.data;
 						});
 				},
-				OpenDialog: function () {
+				OpenDialog() {
 					_this.dialog_data = this.music;
 					_this.dialog_open = true;
 				}
 			},
 			watch: {
-				list: function () {
+				list() {
 					//for(i in this.list)this.list[i].color="#00A1D6";
 					for (i in this.list) this.list[i].color = _this.colors[this.music.mid[0]];
 				},
-				music: function () {
+				music() {
 					this.list = [];
 				}
 			}
 		});
 
 
-		//播放列表
+		//播放列表组件
 		Vue.component("play-music-list", {
 			props: ["music", "index"],
 			template: `
@@ -755,29 +471,383 @@
 			</div>
 				`,
 			methods: {
-				GoUp: function () {
+				GoUp() {
 					key = this.index;
-					pl = _this.playList.concat();
+					pl = _this.play_list.concat();
 					if (key == 0) return;
 					key2 = (key - 1 + pl.length) % pl.length;
-					Vue.set(vm.playList, key, pl[key2]);
-					Vue.set(vm.playList, key2, pl[key]);
+					Vue.set(_this.play_list, key, pl[key2]);
+					Vue.set(_this.play_list, key2, pl[key]);
 				},
-				GoDown: function () {
+				GoDown() {
 					key = this.index;
-					pl = _this.playList.concat();
+					pl = _this.play_list.concat();
 					if (key == pl.length - 1) return;
 					key2 = (key + 1 + pl.length) % pl.length;
-					Vue.set(vm.playList, key, pl[key2]);
-					Vue.set(vm.playList, key2, pl[key]);
+					Vue.set(_this.play_list, key, pl[key2]);
+					Vue.set(_this.play_list, key2, pl[key]);
 				},
-				Delete: function () {
-					_this.playList.splice(this.index, 1);
+				Delete() {
+					_this.play_list.splice(this.index, 1);
 				},
-				OpenDialog: function () {
+				OpenDialog() {
 					_this.dialog_data = this.music;
 					_this.dialog_open = true;
 				}
+			}
+		});
+
+		var vm = new Vue({ //主应用
+			vuetify: new Vuetify(),
+			el: "#app",
+			router,
+			data: {
+				apiurl: "https://1426531544223608.cn-hangzhou.fc.aliyuncs.com/2016-08-15/proxy/music.LATEST/all",
+				// apiurl: "http://127.0.0.1:9000",
+				name: "",
+				platform: "C",
+				type: "music",
+				off: 0,
+				lim: 20,
+				end: false,
+				searching: false,
+				nowmusic: {},
+				nowlrc: "",
+				nowtlrc: "",
+				looptype: 0,
+				hitokoto: "",
+				show_play_list: false,
+				dialog_open: false,
+				dialog_data: {},
+				clip_tmp: "",
+				clip_dialog: false,
+				snackbar: false,
+				snackbar_msg: "",
+				tab: 0,
+				tabs: [
+					{ text: "搜索", tab: "search" },
+					{ text: "列表", tab: "list" },
+				],
+				platforms: [
+					{ "text": "网易云", "value": "C" },
+					{ "text": "QQ", "value": "Q" },
+					{ "text": "bilibili", "value": "B" },
+					// { "text": "SakuraCloud", "value": "S" }
+				],
+				types: [
+					{ "text": "歌曲", "value": "music" },
+					{ "text": "歌单", "value": "list" },
+					{ "text": "用户|UP主", "value": "user" },
+					{ "text": "歌词", "value": "lrc" }
+				],
+				looptypes: [
+					{ "text": "顺序", "value": "0" },
+					{ "text": "单曲", "value": "1" },
+					{ "text": "随机", "value": "2" }
+				],
+				colors: {
+					"C": "#C20C0C",
+					"Q": "#68D9A3",
+					"B": "#FCA6BF",
+					"S": "#F9D2E0"
+				},
+				search_list: [],
+				play_list: [],
+				auto_save: true,
+				save_list: true,
+				save_list_dialog: false,
+			},
+			methods: {
+				Search() { //搜索
+					this.show_play_list = false;
+					this.tab = 0;
+					this.dialog_open = false;
+					//if(this.searching)return;
+					//console.log(this.platform+this.type+this.name);
+					this.searching = true;
+					color = this.colors[this.platform];
+					axios.get(this.apiurl + "/search/", {
+						params: {
+							platform: this.platform,
+							keyword: encodeURIComponent(this.name),
+							type: this.type,
+							offset: this.off,
+							limit: this.lim
+						}
+					}).then((r) => {
+						r = r.data;
+						if (this.off == 0) this.end = false, this.search_list = []; //搜索归零
+						if (r.length == 0) this.end = true;
+						if (!this.end) {
+							for (i in r) r[i].color = color;
+							this.search_list = this.search_list.concat(r);
+							if (r.length < this.lim) this.end = true;
+						}
+						this.off++;
+						this.searching = false;
+					});
+				},
+				PlayMusic(mid) { //播放音乐
+					axios.get(this.apiurl + "/music/", {
+						params: {
+							mid: mid,
+							type: "music",
+						}
+					}).then((response) => {
+						let mmusic=JSON.parse(JSON.stringify(response.data));
+						this.nowmusic = response.data
+						document.querySelector("#bgimg").style.backgroundImage = "url(" + this.nowmusic.img + ")";
+						this.nowlrc = this.nowtlrc = ""
+						this.nowmusic.lrcs = this.DecodeLrc(response.data.lrc);
+						if (response.data.tlrc) this.nowmusic.tlrcs = this.DecodeLrc(response.data.tlrc);
+
+						if (this.nowmusic.src == "") {
+							this.nowmusic.name = "出错了Orz将移除此歌";
+							setTimeout(this.Delete, 3000, this.nowmusic.mid);
+						}
+
+						delete mmusic.src;
+						delete mmusic.img;
+						delete mmusic.lrc;
+						delete mmusic.tlrc;
+						this.AddList([mmusic], "front");
+					});
+				},
+				DecodeLrc(s) { //歌词解码
+					l = s.split("\n");
+					ls = [];
+					for (i = 0; i < l.length; i++) {
+						if (l[i] == "") continue;
+						time_str = l[i].slice(1, l[i].search("]"));
+						t = time_str.split(":")[0] * 60 + time_str.split(":")[1] * 1.0;
+						ls.push([t, l[i].slice(l[i].search("]") + 1)]);
+					}
+					return ls;
+				},
+				Delete(mid) { //从播放列表删除歌曲
+					for (i in this.play_list) {
+						if (this.play_list[i].mid == mid) {
+							this.play_list.splice(i, 1);
+							break;
+						}
+					}
+				},
+				UpLrc() { //歌词更新
+					if (!this.nowmusic.lrcs) return;
+					t = this.$refs["player"].currentTime;
+					for (i = this.nowmusic.lrcs.length - 1; i >= 0; i--) {
+						if (t >= this.nowmusic.lrcs[i][0]) {
+							this.nowlrc = this.nowmusic.lrcs[i][1];
+							break;
+						}
+					}
+
+					if (!this.nowmusic.tlrcs) return;
+					t = this.$refs["player"].currentTime;
+					for (i = this.nowmusic.tlrcs.length - 1; i >= 0; i--) {
+						if (t >= this.nowmusic.tlrcs[i][0]) {
+							this.nowtlrc = this.nowmusic.tlrcs[i][1];
+							break;
+						}
+					}
+				},
+				PlayNext() { //下一首
+					au = this.$refs['player'];
+					if (this.looptype == 0) {
+						if (this.play_list.length) {
+							this.play_list.push(this.play_list.shift());
+							if (this.play_list.length == 1) au.currentTime = 0, au.play();
+						}
+						else {
+							this.nowmusic.src = "";
+						}
+					}
+					if (this.looptype == 2) {
+						if (this.play_list.length) {
+							ind = Math.floor(Math.random() * this.play_list.length)
+							if (ind == 0) au.currentTime = 0, au.play();
+							else this.play_list.unshift(this.play_list.splice(ind, 1)[0]);
+						}
+						else {
+							this.nowmusic.src = "";
+						}
+					}
+					if (this.looptype == 1) {
+						au.currentTime = 0;
+						au.play();
+					}
+				},
+				StartSearch(s) { //新建搜索
+					this.name = s;
+					this.off = 0;
+					this.type = "music";
+					this.Search();
+				},
+				Download(mid, type) { //下载
+					if (type == 'share') {
+						this.clip_tmp = window.location.origin + window.location.pathname + "#/?mid=" + mid;
+						this.clip_dialog = true;
+						return;
+					}
+					axios.get(this.apiurl + "/music/", {
+						params: {
+							mid: mid,
+							type: "music",
+						}
+					})
+						.then((r) => {
+							if (type == "music") {
+								window.open(r.data.src, "_blank");
+							}
+							if (type == "lrc") {
+								this.clip_tmp = r.data.lrc + "\n\n" + r.data.tlrc;
+								this.clip_dialog = true;
+							}
+							if (type == "img") {
+								window.open(r.data.img, "_blank");
+							}
+						})
+				},
+				AddMusic(music, type) { //添加歌曲或歌单到播放列表
+					if (music.type == "music") this.AddList([music], type);
+					else { //如果是歌单什么的就要先获取歌曲列表（解包）
+						axios.get(this.apiurl + "/music/", {
+							params: {
+								mid: music.mid,
+								type: music.type,
+							}
+						}).then((r) => {
+							this.AddList(r.data, type);
+						}).catch((e) => { }).then(() => { this.Delete(music.mid); });
+					}
+				},
+				AddList(list, type) { //添加数个音乐到播放列表
+					if (type == "replace") { //替换
+						this.play_list = list.concat();
+						this.tab = 1;
+					}
+					else {
+						music_list = [];
+						if (type == "front") { //添加到前部 需要去重
+							for (i in list) music_list.push(list[i].mid);
+							for (i in this.play_list) if (music_list.indexOf(this.play_list[i].mid) != -1) this.play_list.splice(i, 1);
+							this.play_list = list.concat(this.play_list);
+						}
+						else { //添加到尾部
+							for (i in this.play_list) music_list.push(this.play_list[i].mid);
+							for (i in list) if (music_list.indexOf(list[i].mid) != -1) list.splice(i, 1);
+							this.play_list = this.play_list.concat(list);
+							this.Msg("已添加到列表(･∀･)");
+						}
+					}
+
+				},
+				AddAll(type) { //把搜索列表中的添加到播放列表
+					this.AddList(this.search_list.concat(), type);
+				},
+				UpHitokoto() { //更新一言
+					axios.get("https://v1.hitokoto.cn/")
+						.then((res) => {
+							this.hitokoto = res.data.hitokoto + "  ——" + res.data.from;
+						})
+				},
+				ClipSuccess(e) { //剪贴板回调
+					this.clip_dialog = false;
+					this.Msg("复制成功");
+				},
+				ClearPlayList() { //清空播放列表
+					this.play_list = [];
+					this.nowmusic = {};
+					this.nowlrc = this.nowtlrc = "";
+				},
+				ChangeSaveList() { //更改同步列表状态
+					this.save_list = !this.save_list;
+					if (this.save_list == true && localStorage.getItem("play_list")) {
+						this.save_list_dialog = true;
+					}
+				},
+				SaveListDialogCallback(method) {
+					if (method == 0) {
+						this.play_list = JSON.parse(localStorage.getItem("play_list"));
+					}
+					if (method == 1) {
+						localStorage.setItem("play_list", JSON.stringify(this.play_list));
+					}
+					this.save_list_dialog = false;
+				},
+				Msg(msg) { //提示框
+					this.snackbar_msg = msg;
+					this.snackbar = true;
+				}
+			},
+			watch: {
+				play_list() {
+					//同步
+					if (this.save_list) {
+						localStorage.setItem("play_list", JSON.stringify(this.play_list));
+					}
+
+					//添加颜色
+					for (i in this.play_list) {
+						this.play_list[i].color = this.colors[this.play_list[i].mid.substr(0, 1)];
+					}
+
+					//播放列表第一个
+					if (this.play_list.length) {
+						let mmusic = this.play_list[0];
+						if (this.nowmusic.mid != mmusic.mid) {
+							if (mmusic.type == "music") this.PlayMusic(mmusic.mid);
+							else {
+								this.AddMusic(mmusic, 'front');
+							}
+						}
+					}
+					else {
+						this.nowmusic = {};
+					}
+				},
+				save_list(){
+					localStorage.setItem("save_list",JSON.parse(this.save_list));
+				}
+			},
+			created() {
+				_this = this;
+
+				axios.interceptors.response.use(response => {
+					// 2xx 范围内的状态码都会触发该函数。
+					// 对响应数据做点什么
+					return response;
+				}, error => {
+					// 超出 2xx 范围的状态码都会触发该函数。
+					// 对响应错误做点什么
+					this.Msg("出错啦QwQ");
+					return Promise.reject(error);
+				});
+
+				setInterval(this.UpLrc, 100);
+				this.UpHitokoto();
+				setInterval(this.UpHitokoto, 10000);
+				setTimeout(() => {
+					this.$refs["player"].addEventListener('ended', () => {
+						this.PlayNext();
+					});
+				}, 1000)
+
+				if(localStorage.getItem("save_list"))
+				{
+					this.save_list=JSON.parse(localStorage.getItem("save_list"));
+				}
+				if (this.save_list && localStorage.getItem("play_list")) {
+					this.play_list = JSON.parse(localStorage.getItem("play_list"));
+					this.tab = 1;
+				}
+				if (this.$route.query.mid) {
+					this.show_play_list = true;
+					this.tab = 1;
+					this.PlayMusic(this.$route.query.mid);
+				}
+
+				this.Msg("欢迎来到Ours-MergeMusic~");
 			}
 		});
 
