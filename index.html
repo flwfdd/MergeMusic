@@ -758,6 +758,7 @@
 				ClearPlayList() { //清空播放列表
 					this.play_list = [];
 					this.nowmusic = {};
+					document.querySelector("#bgimg").style.backgroundImage = "url()";
 					this.nowlrc = this.nowtlrc = "";
 				},
 				ChangeSaveList() { //更改同步列表状态

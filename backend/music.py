@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2021-12-23 23:38:26
-LastEditTime: 2022-01-08 19:11:15
+LastEditTime: 2022-01-18 00:13:48
 Description: 音乐模块
 _(:з」∠)_
 '''
@@ -140,8 +140,8 @@ def qq_music(mid):
 
     # 获取播放链接
     try:
-        url = api_url['Q']+'/song/url?id={}&mediaId={}'
-        r = requests.get(url.format(mid, data['file']['media_mid']),headers={"cookie":config.Q_vip_cookie})
+        url = api_url['Q']+'/song/url?id={}&mediaId_={}' # 不知道为什么突然传mediaId又不行了，暂时不传
+        r = requests.get(url.format(mid, data['file']['media_mid']))
         dic['src'] = json.loads(r.text)['data']
     except:
         dic['src'] = ""
