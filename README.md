@@ -18,7 +18,7 @@
 * B站原生API
 * Python
 
-后端部分详细介绍请看[backend文件夹]("https://github.com/flwfdd/MergeMusic/tree/master/backend")。
+后端部分详细介绍请看[backend文件夹](https://github.com/flwfdd/MergeMusic/tree/master/backend)。
 
 （长时间以来修修补补代码堪称屎山Orz
 
