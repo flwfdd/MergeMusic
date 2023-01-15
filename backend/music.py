@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2021-12-23 23:38:26
-LastEditTime: 2022-01-20 15:53:47
+LastEditTime: 2023-01-15 20:56:24
 Description: 音乐模块
 _(:з」∠)_
 '''
@@ -21,7 +21,7 @@ save_tmp = config.save_tmp
 # 网易云
 
 def cloud_user(mid):
-    url = api_url["C"]+"/user/playlist?uid="+mid
+    url = api_url["C"]+"/user/playlist?uid="+mid+"&cookie="+config.C_vip_cookie
     print(url)
     r = requests.get(url)
     dic = json.loads(r.text)['playlist']
@@ -38,7 +38,7 @@ def cloud_user(mid):
 
 
 def cloud_list(mid):
-    url = api_url["C"]+"/playlist/detail?id="+mid
+    url = api_url["C"]+"/playlist/detail?id="+mid+"&cookie="+config.C_vip_cookie
     print(url)
     r = requests.get(url)
     Ids = json.loads(r.text)
@@ -47,7 +47,7 @@ def cloud_list(mid):
     data = {
         'ids': ','.join(Ids)
     }
-    url = api_url["C"]+"/song/detail?br=320000&t="+str(time.time())
+    url = api_url["C"]+"/song/detail?br=320000&t="+str(time.time())+"&cookie="+config.C_vip_cookie
     r = requests.post(url, data=data)
     dic = json.loads(r.text)['songs']
 
@@ -72,9 +72,9 @@ def cloud_music(mid):
             "id": mid,
             "cookie": config.C_vip_cookie
         }
-        print(api_url["C"]+"/song/url/?t="+str(time.time()))
+        print(api_url["C"]+"/song/url/?realIP=114.246.194.136&t="+str(time.time()))
         r = json.loads(requests.post(
-            api_url["C"]+"/song/url/?br=320000&t="+str(time.time()), data=data).text)['data'][0]
+            api_url["C"]+"/song/url/?realIP=114.246.194.136&br=320000&t="+str(time.time()), data=data).text)['data'][0]
         dic['src'] = r['url']
     except:
         dic['src'] = ""
@@ -83,8 +83,12 @@ def cloud_music(mid):
 
     # 获取图片和基础信息
     try:
-        info = json.loads(requests.get(
-            api_url["C"]+"/song/detail?ids="+mid).text)['songs'][0]
+        data={
+            "ids":mid,
+            "cookie": config.C_vip_cookie
+        }
+        info = json.loads(requests.post(
+            api_url["C"]+"/song/detail/?realIP=114.246.194.136&t="+str(time.time()),data=data).text)['songs'][0]
         dic['name'] = info['name']
         dic['artist'] = [i['name'] for i in info['ar']]
         dic['album'] = {'name': info['al']['name']}
@@ -95,9 +99,9 @@ def cloud_music(mid):
     # 获取歌词
     try:
         dic['lrc'] = json.loads(requests.get(
-            api_url["C"]+"/lyric/?id="+mid).text)['lrc']['lyric']
+            api_url["C"]+"/lyric/?id="+mid+"&cookie="+config.C_vip_cookie).text)['lrc']['lyric']
         dic['tlrc'] = json.loads(requests.get(
-            api_url["C"]+"/lyric/?id="+mid).text)['tlyric']['lyric']
+            api_url["C"]+"/lyric/?id="+mid+"&cookie="+config.C_vip_cookie).text)['tlyric']['lyric']
     except:
         dic['lrc'] = "[00:0.00]木有歌词哦"
 
@@ -119,44 +123,92 @@ def cloud(mid, Type):
 
 # QQ
 
+def qq_get_detail(qq_mid):
+    data={
+        "songinfo": {
+            "method": "get_song_detail_yqq",
+            "module": "music.pf_song_detail_svr",
+            "param": {
+            "song_mid": qq_mid
+            }
+        }
+    }
+    url = "https://u.y.qq.com/cgi-bin/musicu.fcg"
+    r = requests.post(url,data=json.dumps(data,ensure_ascii=False).encode('utf-8'))
+    dic = r.json()['songinfo']['data']['track_info']
+
+    return {
+        'type':'music',
+        'mid':'Q'+qq_mid,
+        'name':dic['name'],
+        'artist':[j["name"] for j in dic['singer']],
+        'album':{'name':dic['album']['name']},
+        'img':"https://y.gtimg.cn/music/photo_new/T002R500x500M000{}.jpg".format(dic['album']['mid']),
+        'media_mid':dic['file']['media_mid']
+    }
+
+def qq_get_src(qq_mid,qq_media_mid):
+    data={
+        "req_0":{
+            "module":"vkey.GetVkeyServer",
+            "method":"CgiGetVkey",
+            "param":{
+                "filename":[
+                    "M500{}.mp3".format(qq_media_mid)
+                ],
+                "guid":"2333",
+                "songmid":[
+                    qq_mid
+                ],
+                "songtype":[
+                    0
+                ],
+                "loginflag":1,
+                "platform":"20"
+            }
+        },
+        "comm":{
+            "format":"json",
+            "ct":24,
+            "cv":0
+        }
+    }
+    url = "https://u.y.qq.com/cgi-bin/musicu.fcg"
+    r = requests.post(url,data=json.dumps(data,ensure_ascii=False).encode('utf-8'))
+    data=r.json()['req_0']['data']
+    purl=data['midurlinfo'][0]['purl']
+    if purl: return data['sip'][0]+purl
+    else: return ""
+
+def qq_get_lrc(qq_mid):
+    data="format=json&nobase64=1&g_tk=5381&songmid=" + qq_mid
+    r = requests.post("https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg",data=data,headers={'Referer':'y.qq.com'})
+    data=r.json()
+    return {
+        'lrc':data['lyric'],
+        'tlrc':data['trans']
+    }
+
 def qq_music(mid):
     dic = {"lrc": '', "tlrc": '', "src": '',
            "img": '', 'type': 'music', 'mid': 'Q'+mid}
 
     # 获取基本信息
     try:
-        url = api_url["Q"]+"/song?songmid={}".format(mid)
-        r = requests.get(url, headers=header)
-        data = json.loads(r.text)['data']['track_info']
-        dic = {}
-        dic['name'] = data['title']
-        dic['type'] = 'music'
-        dic['mid'] = "Q"+mid
-        dic['album'] = {'name': data['album']
-                        ['name'], 'mid': data['album']['mid']}
-        dic['artist'] = [i['name'] for i in data['singer']]
+        dic=qq_get_detail(mid)
     except:
         return dic
 
     # 获取播放链接
     try:
-        url = api_url['Q']+'/song/url?id={}&mediaId={}'
-        print(url.format(mid, data['file']['media_mid']))
-        r = requests.get(url.format(mid, data['file']['media_mid']))
-        dic['src'] = json.loads(r.text)['data']
+        dic['src'] = qq_get_src(mid,dic['media_mid'])
     except:
         dic['src'] = ""
 
-    # 获取图片
-    dic["img"] = "http://y.gtimg.cn/music/photo_new/T002R500x500M000{}.jpg".format(
-        dic['album']['mid'])
-
     # 获取歌词
     try:
-        url = api_url["Q"]+'/lyric?songmid={}'.format(mid)
-        r = requests.get(url)
-        data = json.loads(r.text)['data']
-        dic['lrc'], dic['tlrc'] = data['lyric'], data['trans']
+        data = qq_get_lrc(mid)
+        dic['lrc'], dic['tlrc'] = data['lrc'], data['tlrc']
     except:
         dic['lrc'], dic['tlrc'] = "[00:0.00]木有歌词哦", ""
 
@@ -175,15 +227,15 @@ def qq(mid, Type):
 def bili_get_vid(vid):  # 获取视频详情
     if vid[0] == "B":
         r = requests.get(
-            "https://api.bilibili.com/x/web-interface/view?bvid="+vid)
+            "https://api.bilibili.com/x/web-interface/view?bvid="+vid,headers=header)
     else:
         r = requests.get(
-            "https://api.bilibili.com/x/web-interface/view?aid="+vid[2:])
+            "https://api.bilibili.com/x/web-interface/view?aid="+vid[2:],headers=header)
     return json.loads(r.text)
 
 
 def bili_get_playinfo(vid):  # 获取播放链接
-    r = requests.get("https://www.bilibili.com/video/"+vid)
+    r = requests.get("https://www.bilibili.com/video/"+vid,headers=header)
     s = r.text
     p = s.find("playinfo__=")
     s = s[p+11:]
@@ -193,38 +245,37 @@ def bili_get_playinfo(vid):  # 获取播放链接
 
 
 def bili_get_audio(vid):  # 获取音频
-    head = config.header
-    head['Referer'] = 'https://www.bilibili.com'
+    header['Referer'] = 'https://www.bilibili.com'
     dic = bili_get_playinfo(vid)
     url = dic["data"]["dash"]["audio"][0]["baseUrl"]
     filename = vid.replace("?p=", "_")
     #r = requests.head(url, headers=head)
     #if(int(r.headers['Content-Length'])>30*1024*1024): 0/0
-    r = requests.get(url, headers=head)
+    r = requests.get(url,headers=header)
     return save_tmp(filename+".m4a", r.content)
 
 
 def bili_get_img(vid):  # 获取封面图
     info = bili_get_vid(vid)
-    bin = requests.get(info['data']['pic']).content
+    bin = requests.get(info['data']['pic'],headers=header).content
     # f.write(requests.get(info['data']['pic']+"@233w_233h.jpg").content)
     return save_tmp(vid+".jpg", bin)
 
 
 def bili_get_user_fav(uid):  # 获取用户收藏列表
     url = "https://api.bilibili.com/x/v3/fav/folder/created/list?pn=1&ps=100&up_mid="+uid
-    r = requests.get(url)
+    r = requests.get(url,headers=header)
     return json.loads(r.text)
 
 
 def bili_get_fav(mid):  # 获取收藏夹内容
     url = "https://api.bilibili.com/x/v3/fav/resource/list?media_id={}&ps=20&pn=".format(
         mid)
-    dic = json.loads(requests.get(url).text)
+    dic = json.loads(requests.get(url,headers=header).text)
     mm = dic['data']['info']['media_count']-20
     c = 2
     while mm > 0:
-        mdic = json.loads(requests.get(url+str(c)).text)
+        mdic = json.loads(requests.get(url+str(c),headers=header).text)
         dic['data']['medias'] += mdic['data']['medias']
         c += 1
         mm -= 20
@@ -234,11 +285,11 @@ def bili_get_fav(mid):  # 获取收藏夹内容
 def bili_get_up_vid(uid):  # 获取up主作品列表
     url = "https://api.bilibili.com/x/space/arc/search?ps=50&mid="+uid+"&pn="
     c = 1
-    r = requests.get(url+str(c))
+    r = requests.get(url+str(c),headers=header)
     dic = json.loads(r.text)
     while len(dic['data']['list']['vlist']) < dic['data']['page']['count']:
         c += 1
-        r = requests.get(url+str(c))
+        r = requests.get(url+str(c),headers=header)
         mdic = json.loads(r.text)
         dic['data']['list']['vlist'] += mdic['data']['list']['vlist']
     return dic
@@ -354,6 +405,7 @@ def main(dic):
     elif platform == "Q":
         res = qq(mid, Type)
     elif platform == "B":
+        if mid[0].isdigit(): mid='av'+mid
         res = bili(mid, Type)
 
     return json.dumps(res, ensure_ascii=False)

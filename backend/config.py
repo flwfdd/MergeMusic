@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2022-01-03 13:44:03
-LastEditTime: 2022-01-20 23:39:25
+LastEditTime: 2023-01-15 20:47:41
 Description: 配置文件
 _(:з」∠)_
 '''
@@ -11,7 +11,7 @@ header = {
 
 api_base_url = {
     "C": "http://x.x.x.x:3000",  # 网易云音乐API
-    "Q": "http://x.x.x.x:3300",  # QQ音乐API
+    # "Q": "http://x.x.x.x:3300",  # QQ音乐API
 }
 
 # bilibili歌曲缓存，需要存入歌曲并提供url，这里使用阿里云OSS，可根据需求更换
@@ -70,4 +70,4 @@ else: #使用腾讯云COS
 # 网易云账号cookie
 C_vip_cookie = ""
 # QQ音乐账号cookie
-Q_vip_cookie = ""
+# Q_vip_cookie = ""
