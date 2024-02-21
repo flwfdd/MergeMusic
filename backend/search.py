@@ -1,7 +1,7 @@
 '''
 Author: flwfdd
 Date: 2021-11-13 16:30:46
-LastEditTime: 2023-01-15 20:52:04
+LastEditTime: 2024-02-21 17:47:21
 Description: 搜索模块
 _(:з」∠)_
 '''
@@ -17,7 +17,6 @@ import config
 header = config.header
 api_search_url = config.api_base_url.copy()
 api_search_url['C'] += "/search?keywords={}&type={}&limit={}&offset={}"
-api_search_url['Q'] += "/search?key={}&t={}&pageSize={}&pageNo={}"
 api_search_url['B'] = "https://api.bilibili.com/x/web-interface/search/type?keyword={}&search_type={}&page={}"
 
 
@@ -72,7 +71,7 @@ def qq_search(keyword, Type, limit, offset):
         Type = typet[Type]
     except:
         Type = typet["music"]
-    data={
+    data = {
         "music.search.SearchCgiService": {
             "method": "DoSearchForQQMusicDesktop",
             "module": "music.search.SearchCgiService",
@@ -86,12 +85,15 @@ def qq_search(keyword, Type, limit, offset):
     }
     url = "https://u.y.qq.com/cgi-bin/musicu.fcg"
     print(data)
-    r = requests.post(url,data=json.dumps(data,ensure_ascii=False).encode('utf-8'))
+    r = requests.post(url, data=json.dumps(
+        data, ensure_ascii=False).encode('utf-8'))
     print(r.text)
-    dic = r.json()['music.search.SearchCgiService']['data']['body']['song']['list']
+    dic = r.json()[
+        'music.search.SearchCgiService']['data']['body']['song']['list']
 
     for ind, i in enumerate(dic):
-        if ind==0: print(i)
+        if ind == 0:
+            print(i)
         x = {}
         x['type'] = 'music'
         x['mid'] = "Q"+i['mid']
@@ -102,11 +104,12 @@ def qq_search(keyword, Type, limit, offset):
 
     return dic
 
+
 def bili_search(keyword, Type, limit, offset):
     def remove_em(s):
         s = "".join(s.split("</em>"))
         s = "".join(s.split('<em class="keyword">'))
-        s=html.unescape(s)
+        s = html.unescape(s)
         return s
     typet = {"music": "video", "user": "bili_user"}
     try:
@@ -114,9 +117,12 @@ def bili_search(keyword, Type, limit, offset):
     except:
         Type = typet["music"]
 
-    url = api_search_url["B"].format(keyword, Type, str(int(offset)+1))
+    url = "https://api.bilibili.com/x/web-interface/search/type?keyword={}&search_type={}&page={}&page_size={}"
+    url = url.format(keyword, Type, str(int(offset)+1), limit)
     print(url)
-    r = requests.get(url.format(keyword, offset),headers={"Cookie":"buvid3=C6CE0BBD-51AF-CEC1-735A-B21679C581B811710infoc;"})
+    headers = config.header
+    headers["Cookie"] = "buvid3=C6CE0BBD-51AF-CEC1-735A-B21679C581B811710infoc;"
+    r = requests.get(url.format(keyword, offset), headers=headers)
     dic = json.loads(r.text)["data"]["result"]
 
     if Type == typet["music"]:
@@ -159,3 +165,7 @@ def main(dic):
         res = bili_search(keyword, Type, limit, offset)
 
     return json.dumps(res, ensure_ascii=False)
+
+
+if __name__ == "__main__":
+    print(bili_search("cage", "music", 20, 0))
